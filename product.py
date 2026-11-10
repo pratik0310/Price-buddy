@@ -36,14 +36,26 @@ JUNK_PATTERNS = [
 ]
 
 
+FLUFF = {
+    "with", "and", "for", "the", "of", "in", "by", "new", "latest", "buy",
+    "processor", "display", "graphics", "included", "warranty", "renewed",
+}
+
+
 def _clean(title: str) -> str:
     title = title.strip()
     for pat in JUNK_PATTERNS:
         title = re.sub(pat, "", title, flags=re.I)
     title = re.sub(r"\([^)]*\)", " ", title)  # drop (Previously Inspiron), (Black) etc.
     title = re.sub(r"[,/|;:]", " ", title)  # punctuation -> space
-    title = re.sub(r"\s+", " ", title).strip()
-    return " ".join(title.split()[:10])  # short query matches better
+    words, seen = [], set()
+    for w in title.split():
+        key = w.lower()
+        if key in FLUFF or key in seen:
+            continue
+        seen.add(key)
+        words.append(w)
+    return " ".join(words[:14])  # keep specs (RAM, storage, model) but stay short
 
 
 def _is_bad(title: str) -> bool:

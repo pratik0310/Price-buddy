@@ -35,7 +35,7 @@ URL_RE = re.compile(r"https?://\S+")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Hi! Pratik Gharge Here Paste any product link (Amazon, Flipkart, etc.) "
+        "Hi! Paste any product link (Amazon, Flipkart, etc.) "
         "or type a product name. I will find the best price."
     )
 
@@ -58,27 +58,43 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         results = await asyncio.to_thread(search_prices, query)
         log.info("RESULTS: %s", [(r["store"], r["price_text"], r["title"][:50]) for r in results])
     except ValueError as e:
-        await status.edit_text(f" {e}\nTry typing the product name instead.")
+        await status.edit_text(f"❌ {e}\nTry typing the product name instead.")
         return
     except Exception:
         log.exception("lookup failed")
-        await status.edit_text(" Something went wrong. Try again later.")
+        await status.edit_text("❌ Something went wrong. Try again later.")
         return
 
     if not results:
         await status.edit_text(
-            f"No prices found for:\n{query}\nTry a shorter product name."
+            f"No close match found for:\n{query}\n"
+            "Try typing exact model name, like: dell inspiron 15 i3 16gb 512gb"
         )
         return
 
-    lines = [f"🛒 <b>{html.escape(query)}</b>\n"]
-    for i, r in enumerate(results):
+    exact = [r for r in results if r["match"] == "exact"]
+    similar = [r for r in results if r["match"] != "exact"]
+
+    def row(r, prefix):
         link = html.escape(affiliate(r["link"]), quote=True)
         store = html.escape(r["store"])
         price = html.escape(r["price_text"])
-        badge = "🏆 Best deal: " if i == 0 else f"{i + 1}. "
-        name = html.escape(r["title"][:60])
-        lines.append(f'{badge}<a href="{link}">{store}</a> — <b>{price}</b>\n    <i>{name}</i>')
+        name = html.escape(r["title"][:70])
+        return f'{prefix}<a href="{link}">{store}</a> — <b>{price}</b>\n    <i>{name}</i>'
+
+    lines = [f"🛒 <b>{html.escape(query)}</b>\n"]
+
+    if exact:
+        lines.append("✅ <b>Exact match</b>")
+        for i, r in enumerate(exact[:5]):
+            lines.append(row(r, "🏆 Best deal: " if i == 0 else f"{i + 1}. "))
+    else:
+        lines.append("⚠️ No exact match found. Showing similar models, check specs before buying.")
+
+    if similar:
+        lines.append("\n≈ <b>Similar (specs may differ)</b>")
+        for r in similar[:3]:
+            lines.append(row(r, "• "))
 
     lines.append("\n<i>Prices can change. Check final price on store.</i>")
 
