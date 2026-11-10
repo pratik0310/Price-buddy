@@ -12,7 +12,11 @@ BROWSER_UA = (
 # Shops serve full product tags to link-preview bots (Telegram shows them too)
 PREVIEW_UA = "TelegramBot (like TwitterBot)"
 
-BLOCK_HINTS = ("robot check", "captcha", "access denied", "are you a human", "page not found")
+BLOCK_HINTS = (
+    "robot check", "captcha", "access denied", "are you a human", "page not found",
+    "service unavailable", "503", "502", "403", "404", "forbidden",
+    "something went wrong", "too many requests", "not found",
+)
 
 GENERIC_TITLES = {
     "amazon", "amazon.in", "amazon.com", "flipkart", "flipkart.com",
@@ -74,6 +78,9 @@ def _fetch_title(url: str, user_agent: str):
         )
     except Exception:
         return "", url
+
+    if resp.status_code >= 400:  # blocked / error page: title is useless
+        return "", resp.url
 
     soup = BeautifulSoup(resp.text, "html.parser")
     og = soup.find("meta", property="og:title")
