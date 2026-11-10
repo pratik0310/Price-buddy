@@ -35,7 +35,7 @@ URL_RE = re.compile(r"https?://\S+")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Hi! Paste any product link (Amazon, Flipkart, etc.) "
+        "Hi! Pratik Gharge Paste any product link (Amazon, Flipkart, etc.) "
         "or type a product name. I will find the best price."
     )
 
